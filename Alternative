@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""
+Alternative Adversarial Strategies for Fingerprinting
+
+Defines two adversarial strategies:
+  - Strategy A: Prime-Power (maximize exponent of smallest prime)
+  - Strategy B: Largest-Primes Product (reverse of baseline)
+
+Each function returns:
+  - y or K: the adversarially chosen y-value
+  - N: number of primes dividing y (or multiplied in)
+  - D: number of primes in (n, n^2)
+"""
+
+import math
+from sympy import primerange
+
+def make_prime_power_y(n):
+    """
+    Strategy A: Prime‐Power Attack.
+    Pick q = smallest prime > n,
+    then return the largest power q^m < 2^n - 1
+    """
+    primes = list(primerange(n+1, n*n))
+    D = len(primes)
+    if D == 0:
+        return 1, 0, 0
+
+    q = primes[0]
+    limit = 2**n - 1
+    m = 1
+    while q**(m+1) < limit:
+        m += 1
+
+    y = q**m
+    N = 1 if y % q == 0 else 0
+    return y, N, D
+
+def make_largest_primes_K(n):
+    """
+    Strategy B: Largest‐Primes Product.
+    Multiply primes in (n, n^2) in descending order until < 2^n - 1
+    """
+    primes = list(primerange(n+1, n*n))
+    D = len(primes)
+    K = 1
+    N = 0
+    limit = 2**n - 1
+
+    for p in reversed(primes):
+        if K * p < limit:
+            K *= p
+            N += 1
+        else:
+            break
+
+    return K, N, D
+
+if __name__ == "__main__":
+    print(" n  | strategy         |   N |   D  |  rate (N/D) ")
+    print("----+------------------+-----+------+-------------")
+    for n in [10, 20, 50]:
+        y1, N1, D1 = make_prime_power_y(n)
+        y2, N2, D2 = make_largest_primes_K(n)
+        print(f"{n:3d} | prime-power      | {N1:3d} | {D1:4d} | {N1/D1:0.6f}")
+        print(f"{n:3d} | largest-primes   | {N2:3d} | {D2:4d} | {N2/D2:0.6f}")
