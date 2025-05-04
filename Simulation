@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""
+Run Simulations for Multiple Adversarial Strategies
+
+Compares theoretical and empirical false-positive rates for:
+  - Baseline strategy (product of smallest primes)
+  - Prime-power strategy (q^m < 2^n)
+  - Largest-primes strategy (reverse baseline)
+
+Prints:
+  - N = number of primes dividing y (or used in product)
+  - D = number of primes in (n, n^2)
+  - Theoretical false-positive rate = N / D
+  - Empirical false-positive rate via Monte Carlo
+"""
+
+import random
+from sympy import primerange
+
+from baseline import compute_primes_and_K
+from alternative import make_prime_power_y, make_largest_primes_K
+
+def simulate_empirical_rate(y, primes, trials=5000):
+    """Monte Carlo estimate of false-positive rate for given y and prime list."""
+    count = sum(1 for _ in range(trials) if y % random.choice(primes) == 0)
+    return count / trials if trials > 0 else 0.0
+
+def run_all_strategies(n_list, trials=5000, seed=42):
+    random.seed(seed)
+
+    print(" n   strategy          N     D     theory_rate   empirical_rate")
+    print("---------------------------------------------------------------")
+
+    for n in n_list:
+        primes = list(primerange(n + 1, n * n))
+        D = len(primes)
+
+        # Baseline strategy
+        _, N0, _, K0 = compute_primes_and_K(n)
+        theory0 = N0 / D if D > 0 else 0
+        empirical0 = simulate_empirical_rate(K0, primes, trials)
+        print(f"{n:3d}  baseline        {N0:3d}  {D:5d}   {theory0:0.6f}     {empirical0:0.6f}")
+
+        # Prime-power strategy
+        y1, N1, D1 = make_prime_power_y(n)
+        theory1 = N1 / D1 if D1 > 0 else 0
+        empirical1 = simulate_empirical_rate(y1, primes, trials)
+        print(f"{n:3d}  prime-power     {N1:3d}  {D1:5d}   {theory1:0.6f}     {empirical1:0.6f}")
+
+        # Largest-primes strategy
+        y2, N2, D2 = make_largest_primes_K(n)
+        theory2 = N2 / D2 if D2 > 0 else 0
+        empirical2 = simulate_empirical_rate(y2, primes, trials)
+        print(f"{n:3d}  largest-primes  {N2:3d}  {D2:5d}   {theory2:0.6f}     {empirical2:0.6f}")
+
+        print()
+
+if __name__ == "__main__":
+    n_values = [6, 10, 20, 50, 100, 200, 500]
+    run_all_strategies(n_values, trials=5000, seed=1234)
