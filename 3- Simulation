@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""
+
 Run Simulations for Multiple Adversarial Strategies
 
 Compares theoretical and empirical false-positive rates for:
