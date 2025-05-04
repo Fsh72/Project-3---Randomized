@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""
-Revised Randomized Fingerprinting False-Positive Analysis
 
 This script computes and **prints**:
   - N = number of primes multiplied into K
