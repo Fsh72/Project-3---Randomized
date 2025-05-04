@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""
+Revised Randomized Fingerprinting False-Positive Analysis
+
+This script computes and **prints**:
+  - N = number of primes multiplied into K
+  - D = total number of primes in (n, n^2)
+  - theoretical rate = N/D
+  - empirical rate via simulation
+
+Then it plots:
+  1) theory vs. empirical false-positive rates at select n values
+  2) analytic upper bound f(n) = O(1/n) on a log–log scale up to n=10^100
+"""
+
+import math
+import random
+import matplotlib.pyplot as plt
+from sympy import primerange
+
+def compute_primes_and_K(n):
+    """Return (primes, N, D, K) for given n."""
+    primes = list(primerange(n+1, n*n))
+    D = len(primes)
+    K = 1
+    N = 0
+    limit = 2**n - 1
+    for p in primes:
+        if K * p < limit:
+            K *= p
+            N += 1
+        else:
+            break
+    return primes, N, D, K
+
+def simulate_empirical_rate(primes, K, trials=10_000):
+    """Estimate false-positive rate by sampling primes."""
+    count_fp = sum(1 for _ in range(trials) if K % random.choice(primes) == 0)
+    return count_fp / trials
+
+def analytic_N_bound(n):
+    return math.floor(n * math.log(2) / math.log(n))
+
+def analytic_D_bound(n):
+    return n*n / (2 * math.log(n))
+
+def analytic_fp_bound(n):
+    return analytic_N_bound(n) / analytic_D_bound(n)
+
+def plot_theory_vs_empirical(n_values, trials=10_000, seed=42):
+    random.seed(seed)
+    theory_rates = []
+    empirical_rates = []
+
+    print(" n   N     D       theory_rate   empirical_rate")
+    print("------------------------------------------------")
+    for n in n_values:
+        primes, N, D, K = compute_primes_and_K(n)
+        theory = N / D
+        empirical = simulate_empirical_rate(primes, K, trials)
+        print(f"{n:4d}  {N:4d}  {D:6d}    {theory:0.6f}      {empirical:0.6f}")
+        theory_rates.append(theory)
+        empirical_rates.append(empirical)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(n_values, theory_rates, label='Theoretical f(n)=N/D', marker='o')
+    plt.plot(n_values, empirical_rates, label='Empirical (MC)', linestyle='--', marker='x')
+    plt.xlabel('n')
+    plt.ylabel('False-positive rate')
+    plt.title('Fingerprinting: Theoretical vs Empirical Rates')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def plot_analytic_bound(exponents):
+    n_big = [10**e for e in exponents]
+    bounds = [analytic_fp_bound(n) for n in n_big]
+
+    plt.figure(figsize=(8, 5))
+    plt.loglog(n_big, bounds, marker='o')
+    plt.xlabel('n (log scale)')
+    plt.ylabel('Upper bound on false-positive rate (log scale)')
+    plt.title('Analytic Upper Bound on f(n) up to n=10^100')
+    plt.grid(True, which='both', ls='--')
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    # 1) Select the six specific n-values from the prompt:
+    ns_selected = [6, 10, 50, 100, 500, 1000]
+    plot_theory_vs_empirical(ns_selected, trials=5_000, seed=1234)
+
+    # 2) Plot analytic bound up to n = 10^100
+    exps = [1, 2, 5, 10, 20, 50, 100]
+    plot_analytic_bound(exps)
