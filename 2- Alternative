@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""
+
 Alternative Adversarial Strategies for Fingerprinting
 
 Defines two adversarial strategies:
