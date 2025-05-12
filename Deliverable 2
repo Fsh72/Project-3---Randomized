@@ -1,0 +1,101 @@
+import random
+import time
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- Miller–Rabin primality test ---
+def miller_rabin(n, bases=None, k=5):
+    if n < 2:
+        return False
+    for p in (2,3,5,7,11,13,17,19,23,29):
+        if n == p:
+            return True
+        if n % p == 0:
+            return False
+    d, s = n-1, 0
+    while d % 2 == 0:
+        d //= 2
+        s += 1
+    if bases is None:
+        bases = [random.randrange(2, n-1) for _ in range(k)]
+    for a in bases:
+        x = pow(a, d, n)
+        if x == 1 or x == n-1:
+            continue
+        for _ in range(s-1):
+            x = pow(x, 2, n)
+            if x == n-1:
+                break
+        else:
+            return False
+    return True
+
+# --- Parameters ---
+n_vals   = np.logspace(4, 8, num=6, dtype=int)   # [10⁴,10⁵,…,10⁸]
+k_vals   = [1, 5, 10, 20]
+N_trials = 10_000
+R        = 5  # number of repetitions to average
+
+# --- Results storage ---
+emp_rate = np.zeros((len(k_vals), len(n_vals)))
+ratio    = np.zeros_like(emp_rate)
+all_times = []   # per-test runtime samples
+
+# --- Run experiment with averaging ---
+for i, k in enumerate(k_vals):
+    for j, n in enumerate(n_vals):
+        total_true = 0
+        total_time = 0.0
+
+        for repeat in range(R):
+            count_true = 0
+            for _ in range(N_trials):
+                x = random.randint(2, n)
+                t0 = time.perf_counter()
+                is_prob = miller_rabin(x, k=k)
+                t1 = time.perf_counter()
+                all_times.append(t1 - t0)
+                total_time += (t1 - t0)
+                if is_prob:
+                    count_true += 1
+            total_true += count_true
+
+        avg_emp = total_true / (N_trials * R)
+        emp_rate[i, j] = avg_emp
+        ratio[i, j] = avg_emp / (1 / math.log(n))
+
+        print(f"k={k:<2d}  n={n:8d}  avg_emp_rate={avg_emp:.4f}  ratio={ratio[i,j]:.3f}")
+
+# --- 1) Plot: Rate vs n (log–log) ---
+plt.figure(figsize=(6,4))
+for i, k in enumerate(k_vals):
+    plt.loglog(n_vals, emp_rate[i], marker='o', label=f'k={k}')
+plt.loglog(n_vals, 1/np.log(n_vals), 'k--', label='1/ln n')
+plt.xlabel('n (upper bound)')
+plt.ylabel('“probably prime” rate')
+plt.title('Empirical MR vs PNT (averaged)')
+plt.legend()
+plt.grid(True, which='both', ls=':')
+plt.tight_layout()
+
+# --- 2) Plot: Ratio vs k for fixed n ---
+mid = len(n_vals) // 2
+n_fixed = n_vals[mid]
+plt.figure(figsize=(6,4))
+plt.plot(k_vals, ratio[:, mid], 'o-')
+plt.xlabel('k (rounds)')
+plt.ylabel('empirical / (1/ln n)')
+plt.title(f'Ratio vs k  (n={n_fixed})')
+plt.grid(True, ls=':')
+plt.tight_layout()
+
+# --- 3) Plot: Runtime histogram ---
+plt.figure(figsize=(6,4))
+plt.hist(all_times, bins=50)
+plt.xlabel('Time per MR test (s)')
+plt.ylabel('Frequency')
+plt.title('Distribution of single-call runtimes')
+plt.tight_layout()
+
+plt.show()
