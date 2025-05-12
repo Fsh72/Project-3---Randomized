@@ -1,65 +1,55 @@
-
-Alternative Adversarial Strategies for Fingerprinting
-
-Defines two adversarial strategies:
-  - Strategy A: Prime-Power (maximize exponent of smallest prime)
-  - Strategy B: Largest-Primes Product (reverse of baseline)
-
-Each function returns:
-  - y or K: the adversarially chosen y-value
-  - N: number of primes dividing y (or multiplied in)
-  - D: number of primes in (n, n^2)
-"""
-
-import math
-from sympy import primerange
-
 def make_prime_power_y(n):
-    """
-    Strategy A: Prime‐Power Attack.
-    Pick q = smallest prime > n,
-    then return the largest power q^m < 2^n - 1
-    """
-    primes = list(primerange(n+1, n*n))
+    primes = list(primerange(n + 1, n * n))
     D = len(primes)
     if D == 0:
         return 1, 0, 0
-
     q = primes[0]
     limit = 2**n - 1
     m = 1
-    while q**(m+1) < limit:
+    while q**(m + 1) < limit:
         m += 1
-
-    y = q**m
-    N = 1 if y % q == 0 else 0
-    return y, N, D
+    return q**m, 1, D
 
 def make_largest_primes_K(n):
-    """
-    Strategy B: Largest‐Primes Product.
-    Multiply primes in (n, n^2) in descending order until < 2^n - 1
-    """
-    primes = list(primerange(n+1, n*n))
+    primes = list(primerange(n + 1, n * n))
     D = len(primes)
-    K = 1
-    N = 0
-    limit = 2**n - 1
-
+    K, N = 1, 0
     for p in reversed(primes):
-        if K * p < limit:
+        if K * p < 2**n - 1:
             K *= p
             N += 1
         else:
             break
-
     return K, N, D
 
+def make_hybrid_prime_power_y(n):
+    primes = list(primerange(n + 1, int(1.5 * n)))  # slightly above n
+    if not primes:
+        return 1, 0, 0
+    exponents = [2] * min(5, len(primes))  # square a few of them
+    y = 1
+    for p, e in zip(primes, exponents):
+        if y * (p**e) >= 2**n:
+            break
+        y *= p**e
+    big_primes = list(primerange(n + 1, n * n))
+    D = len(big_primes)
+    N = sum(1 for p in big_primes if y % p == 0)
+    return y, N, D
+# -----------------------------
+# Test strategies
 if __name__ == "__main__":
-    print(" n  | strategy         |   N |   D  |  rate (N/D) ")
-    print("----+------------------+-----+------+-------------")
-    for n in [10, 20, 50]:
+    ns = [10, 20, 50, 100]
+    print(" n | strategy           |  N  |   D   |  rate (N/D)")
+    print("----+--------------------+-----+--------+--------------")
+    for n in ns:
         y1, N1, D1 = make_prime_power_y(n)
         y2, N2, D2 = make_largest_primes_K(n)
-        print(f"{n:3d} | prime-power      | {N1:3d} | {D1:4d} | {N1/D1:0.6f}")
-        print(f"{n:3d} | largest-primes   | {N2:3d} | {D2:4d} | {N2/D2:0.6f}")
+        y3, N3, D3 = make_hybrid_prime_power_y(n)
+        y4, N4, D4 = make_lcm_strategy_y(n)
+
+        print(f"{n:3d} | prime-power         | {N1:3d} | {D1:6d} | {N1/D1:0.6f}")
+        print(f"{n:3d} | largest-primes      | {N2:3d} | {D2:6d} | {N2/D2:0.6f}")
+        print(f"{n:3d} | hybrid prime-power | {N3:3d} | {D3:6d} | {N3/D3:0.6f}")
+        print(f"{n:3d} | LCM composite        | {N4:3d} | {D4:6d} | {N4/D4:0.6f}")
+        print()
