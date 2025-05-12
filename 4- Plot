@@ -1,0 +1,81 @@
+import matplotlib.pyplot as plt
+import random
+from baseline import compute_primes_and_K
+from alternative import (
+    make_prime_power_y,
+    make_largest_primes_K,
+    make_hybrid_prime_power_y
+)
+
+def simulate_empirical_rate(y, primes, trials=5000):
+    return sum(1 for _ in range(trials) if y % random.choice(primes) == 0) / trials
+
+def plot_theory_and_empirical(n_values, trials=5000, seed=1234):
+    random.seed(seed)
+
+    strategies = {
+        "baseline": [],
+        "prime-power": [],
+        "largest-primes": [],
+        "hybrid prime-powers": [],
+        "1/n": []
+    }
+
+    empirical = {
+        "baseline": [],
+        "prime-power": [],
+        "largest-primes": [],
+        "hybrid prime-powers": [],
+    }
+
+    for n in n_values:
+        primes, N0, D0, K0 = compute_primes_and_K(n)
+        strategies["baseline"].append(N0 / D0)
+        empirical["baseline"].append(simulate_empirical_rate(K0, primes, trials))
+
+        y1, N1, _ = make_prime_power_y(n)
+        strategies["prime-power"].append(N1 / D0)
+        empirical["prime-power"].append(simulate_empirical_rate(y1, primes, trials))
+
+        y2, N2, _ = make_largest_primes_K(n)
+        strategies["largest-primes"].append(N2 / D0)
+        empirical["largest-primes"].append(simulate_empirical_rate(y2, primes, trials))
+
+        y3, N3, _ = make_hybrid_prime_power_y(n)
+        strategies["hybrid prime-powers"].append(N3 / D0)
+        empirical["hybrid prime-powers"].append(simulate_empirical_rate(y3, primes, trials))
+
+        strategies["1/n"].append(1 / n)
+
+    # === Plot 1: Theoretical FP Rates ===
+    plt.figure(figsize=(10, 5))
+    for label, values in strategies.items():
+        linestyle = "--" if label == "1/n" else "-"
+        marker = None if label == "1/n" else "o"
+        plt.plot(n_values, values, linestyle=linestyle, marker=marker, label=label)
+    plt.xlabel("n")
+    plt.ylabel("Theoretical False-Positive Rate")
+    plt.title("Theoretical FP Rate vs n")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("theoretical_fp_rate_plot.png")
+    plt.show()
+
+    # === Plot 2: Empirical FP Rates ===
+    plt.figure(figsize=(10, 5))
+    for label, values in empirical.items():
+        plt.plot(n_values, values, marker="x", linestyle="--", label=label)
+    plt.plot(n_values, strategies["1/n"], linestyle=":", color="gray", label="1/n")
+    plt.xlabel("n")
+    plt.ylabel("Empirical False-Positive Rate")
+    plt.title(f"Empirical FP Rate (trials = {trials}) vs n")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("empirical_fp_rate_plot.png")
+    plt.show()
+
+# Example usage
+if __name__ == "__main__":
+    plot_theory_and_empirical(n_values=[10, 20, 50, 100, 200, 500])
