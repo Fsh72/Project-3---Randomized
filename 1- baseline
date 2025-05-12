@@ -1,15 +1,4 @@
 
-This script computes and **prints**:
-  - N = number of primes multiplied into K
-  - D = total number of primes in (n, n^2)
-  - theoretical rate = N/D
-  - empirical rate via simulation
-
-Then it plots:
-  1) theory vs. empirical false-positive rates at select n values
-  2) analytic upper bound f(n) = O(1/n) on a log–log scale up to n=10^100
-"""
-
 import math
 import random
 import matplotlib.pyplot as plt
@@ -48,23 +37,29 @@ def plot_theory_vs_empirical(n_values, trials=10_000, seed=42):
     random.seed(seed)
     theory_rates = []
     empirical_rates = []
+    one_over_n = []
 
-    print(" n   N     D       theory_rate   empirical_rate")
-    print("------------------------------------------------")
+    print("  n   N     D       theory_rate   empirical_rate    1/n")
+    print("---------------------------------------------------------")
     for n in n_values:
         primes, N, D, K = compute_primes_and_K(n)
         theory = N / D
         empirical = simulate_empirical_rate(primes, K, trials)
-        print(f"{n:4d}  {N:4d}  {D:6d}    {theory:0.6f}      {empirical:0.6f}")
+        baseline = 1 / n
+
+        print(f"{n:4d}  {N:4d}  {D:6d}    {theory:0.6f}      {empirical:0.6f}   {baseline:0.6f}")
+
         theory_rates.append(theory)
         empirical_rates.append(empirical)
+        one_over_n.append(baseline)
 
     plt.figure(figsize=(8, 5))
-    plt.plot(n_values, theory_rates, label='Theoretical f(n)=N/D', marker='o')
+    plt.plot(n_values, theory_rates, label='Theoretical $N/D$', marker='o')
     plt.plot(n_values, empirical_rates, label='Empirical (MC)', linestyle='--', marker='x')
+    plt.plot(n_values, one_over_n, label='$1/n$', linestyle=':', marker='s')
     plt.xlabel('n')
     plt.ylabel('False-positive rate')
-    plt.title('Fingerprinting: Theoretical vs Empirical Rates')
+    plt.title('Fingerprinting: Theory vs Empirical vs $1/n$')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
