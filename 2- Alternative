@@ -1,3 +1,8 @@
+
+from sympy import primerange
+from math import lcm
+
+
 def make_prime_power_y(n):
     primes = list(primerange(n + 1, n * n))
     D = len(primes)
