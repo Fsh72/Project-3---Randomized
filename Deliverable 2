@@ -1,3 +1,4 @@
+
 import random
 import time
 import math
@@ -65,7 +66,7 @@ for i, k in enumerate(k_vals):
         emp_rate[i, j] = avg_emp
         ratio[i, j] = avg_emp / (1 / math.log(n))
 
-        print(f"k={k:<2d}  n={n:8d}  avg_emp_rate={avg_emp:.4f}  ratio={ratio[i,j]:.3f}")
+        print(f"k={k:<2d}  n={n:8d}  avg_emp_rate={avg_emp:.3f}  ratio={ratio[i,j]:.3f}")
 
 # --- 1) Plot: Rate vs n (log–log) ---
 plt.figure(figsize=(6,4))
